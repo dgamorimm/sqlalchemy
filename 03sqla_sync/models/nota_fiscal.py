@@ -28,9 +28,9 @@ class NotaFiscal(ModelBase):
     valor: float = sa.Column(sa.DECIMAL(8,2), nullable=False)
     numero_serie: str = sa.Column(sa.String(45), unique=True, nullable=False)
     descricao: str = sa.Column(sa.String(200), nullable=False)
-    
-    id_revendedor: orm.Mapped[int] = orm.mapped_column(sa.Integer, sa.ForeignKey('revendedores.id'))
-    revendedor: orm.Mapped[Revendedor] = orm.relationship('Revendedor', lazy='joined')
+    # ondelete e cascade: Ao fazer a deleção de algum revendedor a tabela de notas fiscais que contem este revendedor, seá apagado, mantendo assim a integridade
+    id_revendedor: orm.Mapped[int] = orm.mapped_column(sa.Integer, sa.ForeignKey('revendedores.id', ondelete='CASCADE'))
+    revendedor: orm.Mapped[Revendedor] = orm.relationship('Revendedor', lazy='joined', cascade='delete')
     
     # uma nota fiscal pode ter varios lotes
     # secundary => configuração da tabela secundária

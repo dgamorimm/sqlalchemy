@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from rich import print
 
 from sqlalchemy import func  # Funções de agregação
@@ -60,6 +60,17 @@ def select_filtro_picole(id_picole:int) -> None:
             print(f'Sabor: {picole.sabor.nome}')
         else:
             print('Não existe o picolé com o id informado')
+
+# SELECT * FROM revendedores WHERE id = <numero>
+def select_filtro_revendedor(id_revendedor:int) -> None:
+    with create_session() as session:
+        revendedor: Optional[Revendedor] = session.query(Revendedor).where(Revendedor.id == id_revendedor).one_or_none()
+        
+        if revendedor:
+            print(f'ID: {revendedor.id}')
+            print(f'Razão Social: {revendedor.razao_social}')
+        else:
+            print(f'Não encontrei nenhum revendedor com ID {id_revendedor}')
 
 def select_complexo_picole() -> None:
     with create_session() as session:
