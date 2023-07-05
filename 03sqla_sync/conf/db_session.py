@@ -45,6 +45,7 @@ def create_engine(sqlite:bool = False) -> Engine:
         __engine = sa.create_engine(url=conn, echo=False, connect_args={'check_same_thread' : False})
         
     else:
+        # Echo = True, você consegue ver no inicio da execução a query sendo montada no seu banco
         conn = f'postgresql://{getenv("PGSQL_USERNAME")}:{getenv("PGSQL_PASSWORD")}@localhost:5432/picoles'
         __engine = sa.create_engine(url=conn, echo=False)
 
