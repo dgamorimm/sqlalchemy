@@ -47,6 +47,19 @@ def select_filtro_sabor(id_sabor:int) -> None:
         print(f'ID: {sabor.id}')
         print(f'Data Criação: {formata_data(sabor.data_criacao)}')
         print(f'Nome: {sabor.nome}')
+        
+# SELECT * FROM sabores WHERE id = <numero>
+def select_filtro_picole(id_picole:int) -> None:
+    with create_session() as session:
+        picole: Picole = session.query(Picole).where(Picole.id == id_picole).one_or_none()
+        
+        if picole:
+            print(f'ID: {picole.id}')
+            print(f'Preço: {picole.preco}')
+            print(f'ID Sabor: {picole.id_sabor}')
+            print(f'Sabor: {picole.sabor.nome}')
+        else:
+            print('Não existe o picolé com o id informado')
 
 def select_complexo_picole() -> None:
     with create_session() as session:
