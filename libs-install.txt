@@ -1,1 +1,1 @@
-pip install sqlalchemy tqdm psycopg2-binary python-dotenv; pip freeze > requirements.txt
+pip install sqlalchemy tqdm psycopg2-binary python-dotenv rich; pip freeze > requirements.txt
