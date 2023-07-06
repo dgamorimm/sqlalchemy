@@ -1,0 +1,1 @@
+pip install sqlmodel tqdm psycopg2-binary python-dotenv rich; pip freeze > requirements.txt
