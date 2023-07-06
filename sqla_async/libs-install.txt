@@ -1,0 +1,1 @@
+pip install sqlalchemy tqdm psycopg2-binary python-dotenv rich aiosqlite asyncpg; pip freeze > requirements.txt
