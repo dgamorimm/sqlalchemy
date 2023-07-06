@@ -53,9 +53,11 @@ async def select_filtro_sabor(id_sabor:int) -> None:
         print(f'Nome: {sabor.nome}')
         
 # SELECT * FROM sabores WHERE id = <numero>
-def select_filtro_picole(id_picole:int) -> None:
-    with create_session() as session:
-        picole: Picole = session.query(Picole).where(Picole.id == id_picole).one_or_none()
+async def select_filtro_picole(id_picole:int) -> None:
+    async with create_session() as session:
+        query = select(Picole).filter(Picole.id == id_picole)
+        resultado = await session.execute(query)
+        picole: Picole = resultado.unique().scalar_one_or_none()  # Recomendado
         
         if picole:
             print(f'ID: {picole.id}')
@@ -66,9 +68,11 @@ def select_filtro_picole(id_picole:int) -> None:
             print('Não existe o picolé com o id informado')
 
 # SELECT * FROM revendedores WHERE id = <numero>
-def select_filtro_revendedor(id_revendedor:int) -> None:
-    with create_session() as session:
-        revendedor: Optional[Revendedor] = session.query(Revendedor).where(Revendedor.id == id_revendedor).one_or_none()
+async def select_filtro_revendedor(id_revendedor:int) -> None:
+    async with create_session() as session:
+        query = select(Revendedor).filter(Revendedor.id == id_revendedor)
+        resultado = await session.execute(query)
+        revendedor: Revendedor = resultado.scalar_one_or_none()  # Recomendado
         
         if revendedor:
             print(f'ID: {revendedor.id}')

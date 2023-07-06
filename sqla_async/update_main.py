@@ -8,24 +8,32 @@ from conf.db_session import create_session
 from models.sabor import Sabor
 from models.picole import Picole
 
-def atualizar_sabor(id_sabor:int, novo_nome:str) -> None:
-    with create_session() as session:
+from sqlalchemy.future import select
+
+import asyncio
+
+async def atualizar_sabor(id_sabor:int, novo_nome:str) -> None:
+    async with create_session() as session:
         # Passo 1
-        sabor: Sabor = session.query(Sabor).filter(Sabor.id == id_sabor).one_or_none()
+        query = select(Sabor).where(Sabor.id == id_sabor)
+        resultado = await session.execute(query)
+        sabor: Sabor = resultado.scalar_one_or_none()
         
         # Passo 2
         if sabor:
             sabor.nome = novo_nome
             
             # Passo 3
-            session.commit()
+            await session.commit()
         else:
             print(f'Não existe sabor com ID {id_sabor}')
             
-def atualizar_picole(id_picole:int, novo_preco:float, novo_sabor:int = None) -> None:
-    with create_session() as session:
+async def atualizar_picole(id_picole:int, novo_preco:float, novo_sabor:int = None) -> None:
+    async with create_session() as session:
         # Passo 1
-        picole: Picole = session.query(Picole).filter(Picole.id == id_picole).one_or_none()
+        query = select(Picole).where(Picole.id == id_picole)
+        resultado = await session.execute(query)
+        picole: Picole = resultado.unique().scalar_one_or_none()
         
         # Passo 2
         if picole:
@@ -35,22 +43,24 @@ def atualizar_picole(id_picole:int, novo_preco:float, novo_sabor:int = None) -> 
                 picole.id_sabor = novo_sabor
             
             # Passo 3
-            session.commit()
+            await session.commit()
         else:
             print(f'Não existe picolé com ID {id_picole}')
 
-if __name__ == '__main__':
-    # from select_main import select_filtro_sabor
-    # id_sabor = 42
+async def atualizando_sabor():
+    from select_main import select_filtro_sabor
+    id_sabor = 42
     
-    # # Antes
-    # select_filtro_sabor(id_sabor=id_sabor)
+    # Antes
+    await select_filtro_sabor(id_sabor=id_sabor)
     
-    # # Atualizando
-    # atualizar_sabor(id_sabor=id_sabor, novo_nome='Abacate')
+    # Atualizando
+    await atualizar_sabor(id_sabor=id_sabor, novo_nome='Abacate')
     
-    # # Depois
-    # select_filtro_sabor(id_sabor=id_sabor)
+    # Depois
+    await select_filtro_sabor(id_sabor=id_sabor)
+
+async def atualizando_picole():
     from select_main import select_filtro_picole
     
     id_picole = 21
@@ -58,10 +68,14 @@ if __name__ == '__main__':
     id_novo_sabor = 42
     
     # Antes
-    select_filtro_picole(id_picole=id_picole)
+    await select_filtro_picole(id_picole=id_picole)
     
     # Atualizando
-    atualizar_picole(id_picole=id_picole, novo_preco=novo_preco, novo_sabor=id_novo_sabor)
+    await atualizar_picole(id_picole=id_picole, novo_preco=novo_preco, novo_sabor=id_novo_sabor)
     
     # Depois
-    select_filtro_picole(id_picole=id_picole)
+    await select_filtro_picole(id_picole=id_picole)
+
+if __name__ == '__main__':
+    # asyncio.run(atualizando_sabor())
+    asyncio.run(atualizando_picole())
