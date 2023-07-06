@@ -1,7 +1,9 @@
+import asyncio
 from typing import List, Optional
 from rich import print
 
 from sqlalchemy import func  # Funções de agregação
+from sqlalchemy.future import select
 
 from conf.helpers import formata_data
 from conf.db_session import create_session
@@ -15,13 +17,11 @@ from models.revendedor import Revendedor
 from models.picole import Picole
 
 ## Select Simples -> SELECT * FROM aditivos_nutritivos
-def select_todos_aditivos_nutritivos() -> None:
-    with create_session() as session:
-        # Forma 1 - Esse retorna em formato de objeto
-        # aditivos_nutritivos: List[AditivoNutritivo] = session.query(AditivoNutritivo)
-        
-        # Forma 2 - Esse retorna em formato de lista
-        aditivos_nutritivos: List[AditivoNutritivo] = session.query(AditivoNutritivo).all()
+async def select_todos_aditivos_nutritivos() -> None:
+    async with create_session() as session:
+        query = select(AditivoNutritivo)
+        resultado = await session.execute(query)
+        aditivos_nutritivos: List[AditivoNutritivo] = resultado.scalars().all()
         
         for an in aditivos_nutritivos:
             print(f'ID: {an.id}')
@@ -30,19 +30,23 @@ def select_todos_aditivos_nutritivos() -> None:
             print(f'Fórmula Química: {an.formula_quimica}')
 
 # SELECT * FROM sabores WHERE id = <numero>
-def select_filtro_sabor(id_sabor:int) -> None:
-    with create_session() as session:
-        # Forma 1 - caso não encontre vai retornar nulo(None)
-        # sabor: Sabor = session.query(Sabor).filter(Sabor.id == id_sabor).first()
+async def select_filtro_sabor(id_sabor:int) -> None:
+    async with create_session() as session:
+        query = select(Sabor).filter(Sabor.id == id_sabor)
+        # query = select(Sabor).where(Sabor.id == id_sabor)
+        resultado = await session.execute(query)
         
-        # Forma 2  - caso não encontre vai retornar nulo(None) (Remendado) - Função nomeada explicitamente
-        # sabor: Sabor = session.query(Sabor).filter(Sabor.id == id_sabor).one_or_none()
+        # Forma 1  # None - caso não encontre
+        # sabor: Sabor = resultado.scalars().first()
         
-        # Forma 3  - exec.NoResultFound caso não encontre
-        # sabor: Sabor = session.query(Sabor).filter(Sabor.id == id_sabor).one()
+        # Forma 2  # None - caso não encontre
+        # sabor: Sabor = resultado.scalars().one_or_none()
         
-        # Forma 4  - usando where ao invés de filter (one(), one_or_none(), first())
-        sabor: Sabor = session.query(Sabor).where(Sabor.id == id_sabor).one_or_none()
+        # Forma 3  # Exception - caso não encontre
+        # sabor: Sabor = resultado.scalars().one()
+        
+        # Forma 4  # None - caso não encontre
+        sabor: Sabor = resultado.scalar_one_or_none()  # Recomendado
         
         print(f'ID: {sabor.id}')
         print(f'Data Criação: {formata_data(sabor.data_criacao)}')
@@ -72,9 +76,12 @@ def select_filtro_revendedor(id_revendedor:int) -> None:
         else:
             print(f'Não encontrei nenhum revendedor com ID {id_revendedor}')
 
-def select_complexo_picole() -> None:
-    with create_session() as session:
-        picoles: List[Picole] = session.query(Picole).all()
+async def select_complexo_picole() -> None:
+    async with create_session() as session:
+        query = select(Picole)
+        resultado = await session.execute(query)
+        picoles: List[Picole] = resultado.scalars().unique().all()  # Unique é semelhante ao DISTINCT do SQL
+        
         for picole in picoles:
             print(f'\nID: {picole.id}')
             print(f'Data Criação: {formata_data(picole.data_criacao)}')
@@ -94,18 +101,25 @@ def select_complexo_picole() -> None:
             print(f'Aditivos Nutritivos: {picole.aditivos_nutritivos}')
 
 # SELECT * FROM sabores ORDER BY data_criacao DESC
-def select_order_by_sabor() -> None:
-    with create_session() as session:
-        sabores: List[Sabor] = session.query(Sabor).order_by(Sabor.data_criacao.desc()).all()
+async def select_order_by_sabor() -> None:
+    async with create_session() as session:
+        query = select(Sabor).order_by(Sabor.data_criacao.desc())
+        resultado = await session.execute(query)
+        sabores: List[Sabor] = resultado.scalars().all()
+        
         for sabor in sabores:
             print(f'ID: {sabor.id}')
             print(f'Data Criação: {formata_data(sabor.data_criacao)}')
             print(f'Nome: {sabor.nome}')
 
 # SELECT * FROM picoles GROUP BY id, id_tipo_picole 
-def select_group_by_picole() -> None:
-    with create_session() as session:
-        picoles: List[Picole] = session.query(Picole).group_by(Picole.id, Picole.id_tipo_picole).all()
+async def select_group_by_picole() -> None:
+    async with create_session() as session:
+        query = select(Picole).group_by(Picole.id, Picole.id_tipo_picole)
+        resultado = await session.execute(query)
+        picoles: List[Picole] = resultado.scalars().unique().all()
+        
+        
         for picole in picoles:
             print(f'\nID: {picole.id}')
             print(f'Tipo Picolé: {picole.tipo_picole.nome}')
@@ -113,29 +127,35 @@ def select_group_by_picole() -> None:
             print(f'Preço: {picole.preco}')
 
 # SELECT * FROM sabores LIMIT 25
-def select_limit() -> None:
-    with create_session() as session:
-        sabores: List[Sabor] = session.query(Sabor).limit(25).all()
+async def select_limit() -> None:
+    async with create_session() as session:
+        query = select(Sabor).limit(25)
+        resultado = await session.execute(query)
+        sabores: List[Sabor] = resultado.scalars()
+        
         for sabor in sabores:
             print(f'ID: {sabor.id}')
             print(f'Data Criação: {formata_data(sabor.data_criacao)}')
             print(f'Nome: {sabor.nome}')
 
 # SELECT COUNT(*) FROM revendedores
-def select_count_revendedor() -> None:
-    with create_session() as session:
-        qtd: List[Revendedor] = session.query(Revendedor).count()
+async def select_count_revendedor() -> None:
+    async with create_session() as session:
+        query = select(func.count(Revendedor.id))
+        resultado = await session.execute(query)
+        qtd: int = resultado.scalar()  # scalar só traz um elemento
         print(f'Total de Revendedores: {qtd}')
 
-def select_agregacao() -> None:
-    with create_session() as session:
-        resultado: List = session.query(
+async def select_agregacao() -> None:
+    async with create_session() as session:
+        query = select(
             func.sum(Picole.preco).label('soma'),
             func.avg(Picole.preco).label('média'),
             func.min(Picole.preco).label('mínimo'),
             func.max(Picole.preco).label('máximo'),
-        ).all()
-        
+        )
+        resultado = await session.execute(query)
+        resultado = resultado.all()
         print(f'Resultado: {resultado}')
         
         print(f'A soma de todos os picolés é: {resultado[0][0]}')
@@ -144,11 +164,11 @@ def select_agregacao() -> None:
         print(f'A picolé mais caro é: {resultado[0][3]}')
 
 if __name__ == '__main__' :
-    # select_todos_aditivos_nutritivos()
-    # select_filtro_sabor(21)
-    # select_complexo_picole()
-    # select_order_by_sabor()
-    # select_group_by_picole()
-    # select_limit()
-    # select_count_revendedor()
-    select_agregacao()
+    # asyncio.run(select_todos_aditivos_nutritivos())
+    # asyncio.run(select_filtro_sabor(21))
+    # asyncio.run(select_complexo_picole())
+    # asyncio.run(select_order_by_sabor())
+    # asyncio.run(select_group_by_picole())
+    # asyncio.run(select_limit())
+    # asyncio.run(select_count_revendedor())
+    asyncio.run(select_agregacao())
