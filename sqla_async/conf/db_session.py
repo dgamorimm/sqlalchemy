@@ -1,79 +1,64 @@
-import sqlalchemy as sa
-
-# Criar uma sessão
-from sqlalchemy.orm import sessionmaker
-# Vamos criar objetos do tipo session
-from sqlalchemy.orm import Session
-# Criar o motor do banco de dados
-from sqlalchemy.future.engine import Engine
-
-# Criar diretório e arquivos (Usado no SQLite)
 from pathlib import Path
-# Tipagem de dados que o caracteriza como um dado opcional
 from typing import Optional
-
-# CRUD nas tabelas no banco de dados, precisamos instanciar essa classe base
-from models.model_base import ModelBase
-
-# capturar a variavel de ambiente
 from os import getenv
 
-# carregara as variaveis de ambiente
-from dotenv import load_dotenv
-load_dotenv()
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncEngine
+from sqlalchemy.ext.asyncio import create_async_engine
 
-# usamos a engine para realizar a conexão com o banco de dados
-# definir qual vai ser a connection com qual o banco
-__engine: Optional[Engine] = None
+from models.model_base import ModelBase
 
-def create_engine(sqlite:bool = False) -> Engine:
+__async_engine: Optional[AsyncEngine] = None
+
+def create_engine(sqlite:bool = False) -> AsyncEngine:
     """
         Função para configurar a conexão ao banco de dados
     """
-    global __engine
+    global __async_engine
     
-    if __engine:
+    if __async_engine:
         return
     
     if sqlite:
         file_db = 'db/picoles.sqlite'
         folder = Path(file_db).parent
-        # Vai criar o arquivo caso não exista, se já existir, não vai fazer nada
         folder.mkdir(parents=True, exist_ok=True)
         
-        conn = f'sqlite:///{file_db}'
-        __engine = sa.create_engine(url=conn, echo=False, connect_args={'check_same_thread' : False})
-        
+        conn  = f'sqlite+aiosqlite:///{file_db}'
+        __async_engine = create_async_engine(url=conn, echo=False, connect_args={'check_same_thread':False})
     else:
-        # Echo = True, você consegue ver no inicio da execução a query sendo montada no seu banco
-        conn = f'postgresql://{getenv("PGSQL_USERNAME")}:{getenv("PGSQL_PASSWORD")}@localhost:5432/picoles'
-        __engine = sa.create_engine(url=conn, echo=False)
+        conn = f'postgresql+asyncpg://{getenv("PGSQL_USERNAME")}:{getenv("PGSQL_PASSWORD")}@localhost:5432/picoles'
+        __async_engine = create_async_engine(url=conn, echo=False)
 
-    return __engine
+    return __async_engine
 
-def create_session() -> Session:
+def create_session() -> AsyncSession:
     """
         Função para criar a sessão de conexão ao banco de dados
     """
-    global __engine
+    global __async_engine
     
-    if not __engine:
-        create_engine()  # Se não usar o Postgres => create_engine(sqlite=True)
+    if not __async_engine:
+        create_engine()
     
-    __session = sessionmaker(__engine, expire_on_commit=False, class_=Session)
+    __async_session = sessionmaker(
+        __async_engine,
+        expire_on_commit=False,
+        class_=AsyncSession
+    )
     
-    session: Session = __session()
+    session: AsyncSession = __async_session()
     
     return session
 
-def create_tables() -> None:
-    global __engine
+async def create_tables() -> None:
+    global __async_engine
     
-    if not __engine:
+    if not __async_engine:
         create_engine()
     
     import models.__all_models
-    # Vai apagar todas a tabelas
-    ModelBase.metadata.drop_all(__engine)
-    #Vai criar todas as tabelas
-    ModelBase.metadata.create_all(__engine)
+    async with __async_engine.begin() as conn:
+        await conn.run_sync(ModelBase.metadata.drop_all)
+        await conn.run_sync(ModelBase.metadata.create_all)

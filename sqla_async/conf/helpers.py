@@ -43,4 +43,4 @@ def gerar_cor() -> str:
 
 
 def formata_data(data: datetime) -> str:
-    return data.strftime("%d/%m/%Y às %H:%M:%S.%f")
+    return data.strftime("%d/%m/%Y às %H:%M:%S")
