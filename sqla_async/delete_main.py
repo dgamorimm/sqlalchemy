@@ -11,58 +11,72 @@ from conf.db_session import create_session
 from models.revendedor import Revendedor
 from models.picole import Picole
 
-def deletar_picole(id_picole:int) -> None:
-    with create_session() as session:
+from sqlalchemy.future import select
+
+import asyncio
+
+async def deletar_picole(id_picole:int) -> None:
+    async with create_session() as session:
         # Passo 1
-        picole: Optional[Picole] = session.query(Picole).filter(Picole.id == id_picole).one_or_none()
+        query = select(Picole).where(Picole.id == id_picole)
+        resultado = await session.execute(query)
+        picole: Picole = resultado.unique().scalar_one_or_none()
         
         if picole:
             # Passo 2 
-            session.delete(picole)
+            await session.delete(picole)
             # Passo 3
-            session.commit()
+            await session.commit()
         else:
             print(f'Não encontrei picolé com ID {id_picole}')
 
-def deletar_revendedor(id_revendedor:int) -> None:
-    with create_session() as session:
+async def deletar_revendedor(id_revendedor:int) -> None:
+    async with create_session() as session:
         # Passo 1
-        revendedor: Optional[Revendedor] = session.query(Revendedor).filter(Revendedor.id == id_revendedor).one_or_none()
+        query = select(Revendedor).where(Revendedor.id == id_revendedor)
+        resultado = await session.execute(query)
+        revendedor: Revendedor = resultado.scalar_one_or_none()
         
         if revendedor:
             # Passo 2 
-            session.delete(revendedor)
+            await session.delete(revendedor)
             # Passo 3
-            session.commit()
+            await session.commit()
         else:
             print(f'Não encontrei revendedor com ID {id_revendedor}')
 
-if __name__ == '__main__':
-    # from select_main import select_filtro_picole
+async def deletando_picole():
+    from select_main import select_filtro_picole
     
-    # id_picole = 21
+    id_picole = 21
     
-    # # Antes
-    # select_filtro_picole(id_picole=id_picole)
+    # Antes
+    await select_filtro_picole(id_picole=id_picole)
     
-    # # Deletando
-    # deletar_picole(id_picole=id_picole)
+    # Deletando
+    await deletar_picole(id_picole=id_picole)
     
-    # # Depois
-    # select_filtro_picole(id_picole=id_picole)
+    # Depois
+    await select_filtro_picole(id_picole=id_picole)
     
+
+async def deletando_revendedor():
     from select_main import select_filtro_revendedor
     
     # -- 3: Não vinculado em uma nota fiscal
-    id_revendedor_nv = 3
+    id_revendedor_nv = 1
     # -- 6: Vinculado em uma nota fiscal
     id_revendedor_v = 6
     
     # Antes
-    select_filtro_revendedor(id_revendedor=id_revendedor_v)
+    await select_filtro_revendedor(id_revendedor=id_revendedor_v)
     
     # Deletando
-    deletar_revendedor(id_revendedor=id_revendedor_v)
+    await deletar_revendedor(id_revendedor=id_revendedor_v)
     
     # Depois
-    select_filtro_revendedor(id_revendedor=id_revendedor_v)
+    await select_filtro_revendedor(id_revendedor=id_revendedor_v)
+
+if __name__ == '__main__':
+    # asyncio.run(deletando_picole())
+    asyncio.run(deletando_revendedor())
