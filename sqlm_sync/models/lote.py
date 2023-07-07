@@ -15,7 +15,7 @@ class Lote(SQLModel, table=True):
     
     # chave estrangeira tipos_picole.id => nomedatabela.colunareferenciada
     id_tipo_picole: Optional[int] = Field(foreign_key='tipos_picole.id')
-    tipo_picole: TipoPicole = Relationship('TipoPicole', lazy='joined', back_populates='tipo_picole')
+    tipo_picole: TipoPicole = Relationship(lazy='joined', back_populates='tipo_picole')
     
     quantidade: int = Field()
     

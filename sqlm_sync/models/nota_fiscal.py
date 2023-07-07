@@ -2,6 +2,8 @@ from typing import Optional, List
 
 from sqlmodel import Field, SQLModel, Relationship
 
+from pydantic import condecimal
+
 from datetime import datetime
 
 from models.revendedor import Revendedor
@@ -22,14 +24,14 @@ class NotaFiscal(SQLModel, table=True):
     id: Optional[int] = Field(primary_key=True, autoincrement=True)
     data_criacao: datetime = Field(default=datetime.now, index=True)
 
-    valor: float = Field()
+    valor: condecimal(max_digits=5, decimal_places=2) = Field(default=0)
     numero_serie: str = Field(max_length=45, unique=True)
     descricao: str = Field(max_length=200)
     
     id_revendedor: Optional[int] = Field(foreign_key='revendedores.id', ondelete='CASCADE')
-    revendedor: Revendedor = Relationship('Revendedor', lazy='joined', cascade='delete')
+    revendedor: Revendedor = Relationship(lazy='joined', cascade='delete')
     
-    lotes: List[Lote] = Relationship('Lote', link_model=LotesNotaFiscal, back_populates='lote', lazy='dynamic')
+    lotes: List[Lote] = Relationship(link_model=LotesNotaFiscal, back_populates='lote', lazy='dynamic')
     
     def __repr__(self) -> str:
         return f'<Nota Fiscal: {self.numero_serie}>'
