@@ -1,9 +1,3 @@
-import sqlalchemy as sa
-
-# Criar uma sessão
-from sqlalchemy.orm import sessionmaker
-# Vamos criar objetos do tipo session
-from sqlalchemy.orm import Session
 # Criar o motor do banco de dados
 from sqlalchemy.future.engine import Engine
 
@@ -12,8 +6,9 @@ from pathlib import Path
 # Tipagem de dados que o caracteriza como um dado opcional
 from typing import Optional
 
-# CRUD nas tabelas no banco de dados, precisamos instanciar essa classe base
-from models.model_base import ModelBase
+from sqlmodel import Session
+from sqlmodel import create_engine as _create_engine
+from sqlmodel import SQLModel
 
 # capturar a variavel de ambiente
 from os import getenv
@@ -42,12 +37,12 @@ def create_engine(sqlite:bool = False) -> Engine:
         folder.mkdir(parents=True, exist_ok=True)
         
         conn = f'sqlite:///{file_db}'
-        __engine = sa.create_engine(url=conn, echo=False, connect_args={'check_same_thread' : False})
+        __engine = _create_engine(url=conn, echo=False, connect_args={'check_same_thread' : False})
         
     else:
         # Echo = True, você consegue ver no inicio da execução a query sendo montada no seu banco
         conn = f'postgresql://{getenv("PGSQL_USERNAME")}:{getenv("PGSQL_PASSWORD")}@localhost:5432/picoles'
-        __engine = sa.create_engine(url=conn, echo=False)
+        __engine = _create_engine(url=conn, echo=False)
 
     return __engine
 
@@ -60,9 +55,7 @@ def create_session() -> Session:
     if not __engine:
         create_engine()  # Se não usar o Postgres => create_engine(sqlite=True)
     
-    __session = sessionmaker(__engine, expire_on_commit=False, class_=Session)
-    
-    session: Session = __session()
+    session: Session = Session(__engine)
     
     return session
 
@@ -74,6 +67,6 @@ def create_tables() -> None:
     
     import models.__all_models
     # Vai apagar todas a tabelas
-    ModelBase.metadata.drop_all(__engine)
+    SQLModel.metadata.drop_all(__engine)
     #Vai criar todas as tabelas
-    ModelBase.metadata.create_all(__engine)
+    SQLModel.metadata.create_all(__engine)
