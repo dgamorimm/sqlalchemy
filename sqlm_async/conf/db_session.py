@@ -52,7 +52,11 @@ def create_session() -> AsyncSession:
     if not __async_engine:
         create_engine()  # Se não usar o Postgres => create_engine(sqlite=True)
     
-    async_session: AsyncSession = AsyncSession(__async_engine)
+    # autoflush => serve para não utilizar após o commit o refresh
+    # expire_on_commit => ao criar a sessão, os objetos mapeados não serão expirados automaticamente após um commit
+    async_session: AsyncSession = AsyncSession(__async_engine, 
+                                               autoflush=False,
+                                               expire_on_commit=False)
     
     return async_session
 
